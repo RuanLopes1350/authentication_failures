@@ -10,7 +10,7 @@ class AuthService {
       id: 15,
       nome: "Larissa Moreira",
       email: email,
-      role: "user"
+      role: "user",
     };
 
     // Gera um token válido inicialmente
@@ -28,11 +28,9 @@ class AuthService {
     }
 
     try {
-      /**
-       * VULNERABILIDADE (Broken Authentication):
-       * Aqui simulamos um erro comum: o desenvolvedor decide olhar o cabeçalho do token
-       * ANTES de validar a assinatura para decidir como processá-lo.
-       */
+      // VULNERABILIDADE (Broken Authentication):
+      // Aqui simulamos um erro comum: o desenvolvedor decide olhar o cabeçalho do token
+      // ANTES de validar a assinatura para decidir como processá-lo.
       const decodedToken = jwt.decode(token, { complete: true }) as any;
       const alg = decodedToken?.header?.alg;
 
@@ -45,7 +43,7 @@ class AuthService {
       } else {
         // Se houver um algoritmo, ele tenta verificar normalmente.
         decoded = jwt.verify(token, this.SECRET_KEY, {
-          algorithms: ["HS256"]
+          algorithms: ["HS256"],
         }) as any;
       }
 
@@ -55,12 +53,12 @@ class AuthService {
         return await authRepository.getAllData();
       }
 
-      return { 
-        id: decoded.id, 
-        nome: decoded.nome, 
-        email: decoded.email, 
+      return {
+        id: decoded.id,
+        nome: decoded.nome,
+        email: decoded.email,
         role: decoded.role,
-        mensagem: "Você é um usuário comum."
+        mensagem: "Você é um usuário comum.",
       };
     } catch (error: any) {
       throw new Error("Token de autenticação inválido: " + error.message);
