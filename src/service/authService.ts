@@ -22,12 +22,14 @@ class AuthService {
     return await authRepository.getAllData();
   }
 
-  async getSecureData(token: string) {
+  async getSecureData(token: string): Promise<any> {
     if (!token) {
       throw new Error("Token de autenticação não fornecido.");
     }
 
     try {
+      const allowedAlgorithms: any = ["HS256", "none"];
+
       // VULNERABILIDADE (Broken Authentication):
       // Aqui simulamos um erro comum: o desenvolvedor decide olhar o cabeçalho do token
       // ANTES de validar a assinatura para decidir como processá-lo.
@@ -36,30 +38,20 @@ class AuthService {
 
       let decoded: any;
 
-      if (alg === "none") {
-        // FALHA CRÍTICA: Se o algoritmo for 'none', o desenvolvedor confia no payload sem verificar assinatura.
-        console.log("AVISO: Processando token sem assinatura (alg: none)!");
-        decoded = decodedToken.payload;
-      } else {
-        // Se houver um algoritmo, ele tenta verificar normalmente.
+      try {
         decoded = jwt.verify(token, this.SECRET_KEY, {
-          algorithms: ["HS256"],
+          algorithms: allowedAlgorithms,
         }) as any;
+      } catch (error: any) {
+        // O bypass só ocorre se o desenvolvedor também tiver permitido explicitamente 'none'.
+        if (alg === "none" && allowedAlgorithms.includes("none")) {
+          console.log("AVISO: Processando token sem assinatura (alg: none)!");
+          decoded = decodedToken.payload;
+        } else {
+          throw error; // Para outros erros, lança normalmente.
+        }
       }
-
-      // Se o atacante mudou o ID no payload para 1 (admin), ou mudou a role para admin
-      if (decoded.role === "admin" || decoded.id === 1) {
-        console.log("ACESSO DE ADMINISTRADOR CONCEDIDO VIA JWT BYPASS!");
-        return await authRepository.getAllData();
-      }
-
-      return {
-        id: decoded.id,
-        nome: decoded.nome,
-        email: decoded.email,
-        role: decoded.role,
-        mensagem: "Você é um usuário comum.",
-      };
+      return decoded;
     } catch (error: any) {
       throw new Error("Token de autenticação inválido: " + error.message);
     }
