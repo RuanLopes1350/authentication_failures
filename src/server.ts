@@ -1,9 +1,11 @@
 import express from "express";
+import cors from "cors";
 import authRouter from "./routes/authRoutes";
 
 const PORT = 1350;
 export const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 // Rota Health Check
